@@ -269,7 +269,9 @@ async function run() {
         );
 
         const paymentInfo = verifyRes.data[0];
-        const apiKey = process.env.BRAVO_API_KEY;
+        const apiKey =
+          (process.env.BRAVO_API_KEY || process.env.BREVO_API_KEY || "").trim();
+          console.log("🔍 Success API Key Status-------->:", apiKey ? "Found ✅" : "Not Found ❌");
         const brevoUri =
           process.env.BRAVO_URI || "https://api.brevo.com/v3/smtp/email";
         const orderForEmail = await OrdersAll.findOne({
@@ -467,7 +469,9 @@ async function run() {
     app.all("/api/payment/cancel", async (req, res) => {
       try {
         const sp_order_id = req.query.order_id;
-        const apiKey = process.env.BRAVO_API_KEY;
+        const apiKey =
+          (process.env.BRAVO_API_KEY || process.env.BREVO_API_KEY || "").trim();
+          console.log("🔍 Success API Key Status:", apiKey ? "Found ✅" : "Not Found ❌");
         const brevoUri =
           process.env.BRAVO_URI || "https://api.brevo.com/v3/smtp/email";
 
