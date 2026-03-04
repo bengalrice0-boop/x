@@ -206,6 +206,7 @@ async function run() {
 
             customer_name,
             customer_phone,
+            customer_email: email,
             customer_address,
             customer_city,
             customer_postcode: customer_post_code,
