@@ -199,10 +199,8 @@ async function run() {
             amount,
             currency,
 
-            return_url: "https://x-z9vw.onrender.com/api/payment/success",
-            // return_url: "http://localhost:3000/api/payment/success",
-            cancel_url: "https://x-z9vw.onrender.com/api/payment/cancel",
-            // cancel_url: "http://localhost:3000/api/payment/cancel",
+            return_url: `${PUBLIC_BASE_URL}/api/payment/success`,
+            cancel_url: `${PUBLIC_BASE_URL}/api/payment/cancel`,
 
             customer_name,
             customer_phone,
@@ -359,6 +357,7 @@ async function run() {
             } else if (!emailData) {
               console.warn("Email not sent: order email is missing");
             } else {
+              console.log("Attempting success email to:", recipientEmail);
               const response = await axios.post(brevoUri, emailData, {
                 headers: {
                   "Content-Type": "application/json",
@@ -368,7 +367,11 @@ async function run() {
               console.log("Email sent successfully:", response.data);
             }
           } catch (emailError) {
-            console.error("Error sending email:", emailError);
+            console.error(
+              "Error sending email:",
+              emailError.response?.status,
+              emailError.response?.data || emailError.message,
+            );
           }
 
           res.redirect("https://bengalrice.net/success");
@@ -433,6 +436,7 @@ async function run() {
             };
 
             try {
+              console.log("Attempting failed email to:", failedOrder.email);
               await axios.post(brevoUri, failedEmailData, {
                 headers: {
                   "Content-Type": "application/json",
@@ -441,7 +445,11 @@ async function run() {
               });
               console.log("Failed payment email sent successfully");
             } catch (emailError) {
-              console.error("Error sending failed payment email:", emailError);
+              console.error(
+                "Error sending failed payment email:",
+                emailError.response?.status,
+                emailError.response?.data || emailError.message,
+              );
             }
           }
           
@@ -520,6 +528,7 @@ async function run() {
             };
 
             try {
+              console.log("Attempting cancelled email to:", cancelledOrder.email);
               await axios.post(brevoUri, cancelEmailData, {
                 headers: {
                   "Content-Type": "application/json",
@@ -528,7 +537,11 @@ async function run() {
               });
               console.log("Cancelled payment email sent successfully");
             } catch (emailError) {
-              console.error("Error sending cancelled payment email:", emailError);
+              console.error(
+                "Error sending cancelled payment email:",
+                emailError.response?.status,
+                emailError.response?.data || emailError.message,
+              );
             }
           }
         }
