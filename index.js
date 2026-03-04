@@ -199,8 +199,10 @@ async function run() {
             amount,
             currency,
 
-            return_url: `${PUBLIC_BASE_URL}/api/payment/success`,
-            cancel_url: `${PUBLIC_BASE_URL}/api/payment/cancel`,
+            return_url: "https://x-z9vw.onrender.com/api/payment/success",
+            // return_url: "http://localhost:3000/api/payment/success",
+            cancel_url: "https://x-z9vw.onrender.com/api/payment/cancel",
+            // cancel_url: "http://localhost:3000/api/payment/cancel",
 
             customer_name,
             customer_phone,
@@ -470,8 +472,42 @@ async function run() {
           process.env.BRAVO_URI || "https://api.brevo.com/v3/smtp/email";
 
         if (sp_order_id) {
-          // Get order information
-          const cancelledOrder = await OrdersAll.findOne({ order_id: sp_order_id });
+          // Try direct match first (some gateways may send customer_order_id)
+          let cancelledOrder = await OrdersAll.findOne({ order_id: sp_order_id });
+
+          // If not found, resolve through verification to get customer_order_id
+          if (!cancelledOrder) {
+            try {
+              const tokenRes = await axios.post(
+                process.env.SP_ENDPOINT + "/api/get_token",
+                {
+                  username: process.env.SP_USERNAME,
+                  password: process.env.SP_PASSWORD,
+                },
+              );
+              const { token } = tokenRes.data;
+
+              const verifyRes = await axios.post(
+                process.env.SP_ENDPOINT + "/api/verification",
+                { token, order_id: sp_order_id },
+                { headers: { "Content-Type": "application/json" } },
+              );
+
+              const verifyInfo = verifyRes.data?.[0];
+              const customerOrderId = verifyInfo?.customer_order_id;
+              if (customerOrderId) {
+                cancelledOrder = await OrdersAll.findOne({
+                  order_id: customerOrderId,
+                });
+              }
+            } catch (verifyError) {
+              console.error(
+                "Cancel verify lookup failed:",
+                verifyError.response?.status,
+                verifyError.response?.data || verifyError.message,
+              );
+            }
+          }
           
           if (cancelledOrder && cancelledOrder.email && apiKey && brevoUri) {
             const cancelEmailData = {
