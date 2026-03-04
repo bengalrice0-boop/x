@@ -269,19 +269,20 @@ async function run() {
 
         const paymentInfo = verifyRes.data[0];
         const apiKey = process.env.BRAVO_API_KEY;
-        const uri = process.env.BRAVO_URI;
+        const brevoUri =
+          process.env.BRAVO_URI || "https://api.brevo.com/v3/smtp/email";
         const orderForEmail = await OrdersAll.findOne({
           order_id: paymentInfo.customer_order_id,
         });
-        const recipientEmail = orderForEmail?.email;
+        const recipientEmail =
+          orderForEmail?.email || paymentInfo?.customer_email || paymentInfo?.email;
         const emailData = recipientEmail
           ? {
               sender: {
                 name: "Payment Successful - Bengal Rice",
-                email: "bornorahman1971@gmail.com",
+                email: "billing@bengalrice.net",
               },
-              to: [{ email: "sakibsarker6969@gmail.com" }],
-              // to: [{ email: recipientEmail }],
+              to: [{ email: recipientEmail }],
               subject: "Payment Confirmation",
               htmlContent: `<html>
           <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
@@ -336,7 +337,7 @@ async function run() {
             }
           : null;
 
-        if (paymentInfo.sp_code === "1000") {
+        if (String(paymentInfo.sp_code) === "1000") {
           const myOrderId = paymentInfo.customer_order_id;
           const updateResult = await OrdersAll.updateOne(
             { order_id: myOrderId },
@@ -352,10 +353,12 @@ async function run() {
           try {
             if (!apiKey) {
               console.warn("Email not sent: BRAVO_API_KEY is missing");
+            } else if (!brevoUri) {
+              console.warn("Email not sent: BRAVO_URI is missing");
             } else if (!emailData) {
               console.warn("Email not sent: order email is missing");
             } else {
-              const response = await axios.post(uri, emailData, {
+              const response = await axios.post(brevoUri, emailData, {
                 headers: {
                   "Content-Type": "application/json",
                   "api-key": apiKey,
@@ -374,14 +377,13 @@ async function run() {
           const myOrderId = paymentInfo.customer_order_id;
           const failedOrder = await OrdersAll.findOne({ order_id: myOrderId });
           
-          if (failedOrder && failedOrder.email && apiKey) {
+          if (failedOrder && failedOrder.email && apiKey && brevoUri) {
             const failedEmailData = {
               sender: {
                 name: "Bengal Rice Billing Team",
-                email: "bornorahman1971@gmail.com",
+                email: "billing@bengalrice.net",
               },
-              to: [{ email: "sakibsarker6969@gmail.com" }],
-              // to: [{ email: failedOrder.email }],
+              to: [{ email: failedOrder.email }],
               subject: "Payment Failed - Action Required",
               htmlContent: `<html>
           <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
@@ -430,7 +432,7 @@ async function run() {
             };
 
             try {
-              await axios.post(uri, failedEmailData, {
+              await axios.post(brevoUri, failedEmailData, {
                 headers: {
                   "Content-Type": "application/json",
                   "api-key": apiKey,
@@ -455,20 +457,20 @@ async function run() {
       try {
         const sp_order_id = req.query.order_id;
         const apiKey = process.env.BRAVO_API_KEY;
-        const uri = process.env.BRAVO_URI;
+        const brevoUri =
+          process.env.BRAVO_URI || "https://api.brevo.com/v3/smtp/email";
 
         if (sp_order_id) {
           // Get order information
           const cancelledOrder = await OrdersAll.findOne({ order_id: sp_order_id });
           
-          if (cancelledOrder && cancelledOrder.email && apiKey) {
+          if (cancelledOrder && cancelledOrder.email && apiKey && brevoUri) {
             const cancelEmailData = {
               sender: {
                 name: "Bengal Rice Billing Team",
-                email: "bornorahman1971@gmail.com",
+                email: "billing@bengalrice.net",
               },
-              to: [{ email: "sakibsarker6969@gmail.com" }],
-              // to: [{ email: cancelledOrder.email }],
+              to: [{ email: cancelledOrder.email }],
               subject: "Payment Cancelled - We're Here to Help",
               htmlContent: `<html>
           <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
@@ -517,7 +519,7 @@ async function run() {
             };
 
             try {
-              await axios.post(uri, cancelEmailData, {
+              await axios.post(brevoUri, cancelEmailData, {
                 headers: {
                   "Content-Type": "application/json",
                   "api-key": apiKey,
